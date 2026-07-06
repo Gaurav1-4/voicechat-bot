@@ -1,0 +1,5 @@
+Flask
+groq
+edge-tts
+gTTS
+python-dotenv
