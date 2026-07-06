@@ -392,3 +392,95 @@ body {
 ::-webkit-scrollbar-thumb:hover {
     background: #4a4b59; 
 }
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+    .app-container {
+        flex-direction: column;
+        height: 100dvh; /* Better handling of mobile browser address bars */
+    }
+    
+    .left-pane {
+        padding: 20px;
+        flex: 0 0 auto;
+        min-height: 35vh;
+        border-bottom: 1px solid #1f2029;
+    }
+    
+    .orb {
+        width: 120px;
+        height: 120px;
+    }
+    
+    .orb-container {
+        margin-bottom: 15px;
+    }
+    
+    .take-tag {
+        left: -10px;
+        top: -10px;
+        font-size: 10px;
+    }
+    
+    .status-text {
+        margin-bottom: 10px;
+    }
+    
+    .status-text h2 {
+        font-size: 24px;
+        margin-bottom: 5px;
+    }
+    
+    .status-text p {
+        font-size: 12px;
+    }
+    
+    .visualizer {
+        height: 30px;
+        margin-bottom: 10px;
+    }
+    
+    .metrics {
+        display: none; /* Hide metrics on very small screens to save space */
+    }
+    
+    .right-pane {
+        border-left: none;
+        flex: 1;
+        overflow-y: hidden; /* chat-container handles scrolling */
+    }
+    
+    .chat-container {
+        padding: 20px;
+        gap: 15px;
+    }
+    
+    .suggestions {
+        padding: 0 20px 10px 20px;
+    }
+    
+    .input-area {
+        padding: 0 20px 20px 20px;
+    }
+    
+    .input-bar-wrapper {
+        padding: 6px 8px 6px 15px;
+    }
+    
+    .pill-btn {
+        padding: 0 12px;
+        height: 36px;
+        font-size: 13px;
+    }
+    
+    .pill-btn svg {
+        width: 14px;
+        height: 14px;
+    }
+    
+    .circle-btn {
+        width: 36px;
+        height: 36px;
+    }
+}
+
