@@ -7,6 +7,23 @@ const btnText = document.getElementById('btnText');
 const chatContainer = document.getElementById('chat-container');
 const audioPlayer = document.getElementById('audioPlayer');
 
+// Setup Audio Unlocking mechanism for strict mobile browsers
+let audioUnlocked = false;
+
+function forceUnlockAudio() {
+    if (!audioUnlocked) {
+        // Create a silent mp3 data URI to force unlock
+        audioPlayer.src = 'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU5LjI3LjEwMAAAAAAAAAAAAAAA//OEAAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAAEAAABIwBRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFR//OEAAAAAAAEaAQUAAAADAAAAAAAABzR9AQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//OEAAAAAAAERiAQEAAAAAAAAAAABzR9AQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//OEAAAAAAAEaAAAAQAAAAAAAAAAABzR9AQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//OEAwAAAAAEaAAAAQAAAAAAAAAAABzR9AQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+        audioPlayer.play().then(() => {
+            audioPlayer.pause();
+            audioPlayer.currentTime = 0;
+            audioUnlocked = true;
+        }).catch(e => {
+            console.log('Audio unlock failed:', e);
+        });
+    }
+}
+
 // Request permissions
 if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
     navigator.mediaDevices.getUserMedia({ audio: true })
@@ -64,6 +81,8 @@ askInput.addEventListener('keydown', (e) => {
         sendTextMessage();
     }
 });
+askInput.addEventListener('click', forceUnlockAudio);
+askInput.addEventListener('touchstart', forceUnlockAudio);
 
 uploadBtn.addEventListener('click', () => {
     addMessage("⚠️ Upload functionality is not yet implemented.", "system-msg");
@@ -79,32 +98,10 @@ document.querySelectorAll('.suggestion-chip').forEach(chip => {
 
 let recordStartTime = 0;
 let currentSentMsgDiv = null;
-let audioUnlocked = false;
-let audioCtx = null;
-
-function unlockAudio() {
-    if (!audioUnlocked) {
-        if (!audioCtx) {
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        }
-        if (audioCtx.state === 'suspended') {
-            audioCtx.resume();
-        }
-        
-        // Also unlock the hidden audio element just in case
-        audioPlayer.play().catch(e => { console.log('Audio unlock failed:', e); });
-        audioPlayer.pause();
-        audioPlayer.currentTime = 0;
-        audioUnlocked = true;
-    }
-}
-
-// Bind to all possible interaction events to ensure unlocking happens
-document.body.addEventListener('click', unlockAudio, { once: true });
-document.body.addEventListener('touchstart', unlockAudio, { once: true });
-document.body.addEventListener('keydown', unlockAudio, { once: true });
 
 function startRecording() {
+    forceUnlockAudio(); // Unlock audio on direct user interaction
+    
     if (!mediaRecorder || isRecording) return;
     audioChunks = [];
     try {
@@ -150,6 +147,8 @@ function stopRecording() {
 }
 
 function sendTextMessage() {
+    forceUnlockAudio(); // Unlock audio on direct user interaction
+    
     const text = askInput.value.trim();
     if (!text) return;
     
@@ -234,30 +233,20 @@ function sendToBackend(audioBlob, ext, textInput) {
         
         document.querySelector('.visualizer-text').textContent = "Speaking...";
         
-        // Play audio answer using Web Audio API to bypass iOS silent switch and autoplay policies
-        if (!audioCtx) {
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        }
-        if (audioCtx.state === 'suspended') {
-            audioCtx.resume();
-        }
+        // Play audio answer via HTML5 audio element
+        const audioUrl = URL.createObjectURL(data.audioBlob);
+        audioPlayer.src = audioUrl;
         
-        data.audioBlob.arrayBuffer().then(arrayBuffer => {
-            return audioCtx.decodeAudioData(arrayBuffer);
-        }).then(audioBuffer => {
-            const source = audioCtx.createBufferSource();
-            source.buffer = audioBuffer;
-            source.connect(audioCtx.destination);
-            source.start(0);
-            
-            source.onended = () => {
-                document.querySelector('.visualizer-text').textContent = "Ready.";
-            };
-        }).catch(e => {
+        audioPlayer.play().catch(e => {
             console.error("Audio playback error:", e);
             document.querySelector('.visualizer-text').textContent = "Ready.";
-            addMessage("Error: Could not play audio.", "system-msg");
+            addMessage("Error: Browser prevented audio playback. Make sure your phone is not on silent mode.", "system-msg");
         });
+        
+        audioPlayer.onended = () => {
+            document.querySelector('.visualizer-text').textContent = "Ready.";
+            URL.revokeObjectURL(audioUrl); // Clean up memory
+        };
     })
     .catch(err => {
         console.error(err);
