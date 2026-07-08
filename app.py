@@ -174,10 +174,14 @@ def ask():
         voice_pref = request.form.get('voice', 'female')
         voice_id = 'en-IN-PrabhatNeural' if voice_pref == 'male' else 'en-IN-NeerjaNeural'
             
-        import subprocess
-        import sys
-        # Use edge_tts via python module to generate the audio file (avoids PATH issues)
-        subprocess.run([sys.executable, '-m', 'edge_tts', '--voice', voice_id, '-f', temp_text_file, '--write-media', output_audio], check=True)
+        import edge_tts
+        import asyncio
+        
+        async def _generate_audio():
+            communicate = edge_tts.Communicate(answer_text, voice_id)
+            await communicate.save(output_audio)
+            
+        asyncio.run(_generate_audio())
         
         # Return the audio file directly as a binary response, along with headers for the text
         response = send_file(output_audio, mimetype="audio/mpeg", as_attachment=False)
