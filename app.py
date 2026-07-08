@@ -172,7 +172,7 @@ def ask():
             f.write(answer_text)
             
         voice_pref = request.form.get('voice', 'female')
-        voice_id = 'en-IN-PrabhatNeural' if voice_pref == 'male' else 'en-IN-NeerjaNeural'
+        voice_id = 'en-IN-PrabhatNeural' if voice_pref == 'male' else 'en-IN-NeerjaExpressiveNeural'
             
         import edge_tts
         import asyncio
