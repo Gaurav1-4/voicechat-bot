@@ -80,13 +80,13 @@ document.querySelectorAll('.suggestion-chip').forEach(chip => {
 let recordStartTime = 0;
 let currentSentMsgDiv = null;
 let audioUnlocked = false;
-
-// Global AudioContext for Web Audio API playback
-const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+let audioCtx = null;
 
 function unlockAudio() {
     if (!audioUnlocked) {
-        // Resume AudioContext if it was suspended (required for iOS Safari)
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
         if (audioCtx.state === 'suspended') {
             audioCtx.resume();
         }
@@ -99,8 +99,10 @@ function unlockAudio() {
     }
 }
 
+// Bind to all possible interaction events to ensure unlocking happens
 document.body.addEventListener('click', unlockAudio, { once: true });
 document.body.addEventListener('touchstart', unlockAudio, { once: true });
+document.body.addEventListener('keydown', unlockAudio, { once: true });
 
 function startRecording() {
     if (!mediaRecorder || isRecording) return;
@@ -233,6 +235,13 @@ function sendToBackend(audioBlob, ext, textInput) {
         document.querySelector('.visualizer-text').textContent = "Speaking...";
         
         // Play audio answer using Web Audio API to bypass iOS silent switch and autoplay policies
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+        
         data.audioBlob.arrayBuffer().then(arrayBuffer => {
             return audioCtx.decodeAudioData(arrayBuffer);
         }).then(audioBuffer => {
