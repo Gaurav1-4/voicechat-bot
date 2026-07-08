@@ -175,8 +175,9 @@ def ask():
         voice_id = 'en-IN-PrabhatNeural' if voice_pref == 'male' else 'en-IN-NeerjaNeural'
             
         import subprocess
-        # Use edge-tts to generate the audio file
-        subprocess.run(['edge-tts', '--voice', voice_id, '-f', temp_text_file, '--write-media', output_audio], check=True)
+        import sys
+        # Use edge_tts via python module to generate the audio file (avoids PATH issues)
+        subprocess.run([sys.executable, '-m', 'edge_tts', '--voice', voice_id, '-f', temp_text_file, '--write-media', output_audio], check=True)
         
         # Return the audio file directly as a binary response, along with headers for the text
         response = send_file(output_audio, mimetype="audio/mpeg", as_attachment=False)
