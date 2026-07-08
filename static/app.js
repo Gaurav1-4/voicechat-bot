@@ -190,8 +190,8 @@ function sendToBackend(audioBlob, ext, textInput) {
             const audioBlob = await response.blob();
             return {
                 audioBlob: audioBlob,
-                userText: decodeURIComponent(escape(response.headers.get('X-User-Text') || "")),
-                answerText: decodeURIComponent(escape(response.headers.get('X-Answer-Text') || ""))
+                userText: decodeURIComponent(response.headers.get('X-User-Text') || ""),
+                answerText: decodeURIComponent(response.headers.get('X-Answer-Text') || "")
             };
         }
     })

@@ -181,8 +181,9 @@ def ask():
         
         # Return the audio file directly as a binary response, along with headers for the text
         response = send_file(output_audio, mimetype="audio/mpeg", as_attachment=False)
-        response.headers['X-User-Text'] = user_text.encode('utf-8').decode('latin-1') # Ensure safe headers
-        response.headers['X-Answer-Text'] = answer_text.encode('utf-8').decode('latin-1')
+        import urllib.parse
+        response.headers['X-User-Text'] = urllib.parse.quote(user_text)
+        response.headers['X-Answer-Text'] = urllib.parse.quote(answer_text)
         
         return response
 
