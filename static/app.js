@@ -81,8 +81,17 @@ let recordStartTime = 0;
 let currentSentMsgDiv = null;
 let audioUnlocked = false;
 
+// Global AudioContext for Web Audio API playback
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
 function unlockAudio() {
     if (!audioUnlocked) {
+        // Resume AudioContext if it was suspended (required for iOS Safari)
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+        
+        // Also unlock the hidden audio element just in case
         audioPlayer.play().catch(e => { console.log('Audio unlock failed:', e); });
         audioPlayer.pause();
         audioPlayer.currentTime = 0;
@@ -223,15 +232,23 @@ function sendToBackend(audioBlob, ext, textInput) {
         
         document.querySelector('.visualizer-text').textContent = "Speaking...";
         
-        // Play audio answer directly from blob
-        const audioUrl = URL.createObjectURL(data.audioBlob);
-        audioPlayer.src = audioUrl;
-        audioPlayer.play();
-        
-        audioPlayer.onended = () => {
+        // Play audio answer using Web Audio API to bypass iOS silent switch and autoplay policies
+        data.audioBlob.arrayBuffer().then(arrayBuffer => {
+            return audioCtx.decodeAudioData(arrayBuffer);
+        }).then(audioBuffer => {
+            const source = audioCtx.createBufferSource();
+            source.buffer = audioBuffer;
+            source.connect(audioCtx.destination);
+            source.start(0);
+            
+            source.onended = () => {
+                document.querySelector('.visualizer-text').textContent = "Ready.";
+            };
+        }).catch(e => {
+            console.error("Audio playback error:", e);
             document.querySelector('.visualizer-text').textContent = "Ready.";
-            URL.revokeObjectURL(audioUrl); // Clean up memory
-        };
+            addMessage("Error: Could not play audio.", "system-msg");
+        });
     })
     .catch(err => {
         console.error(err);
